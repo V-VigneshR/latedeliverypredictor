@@ -1,48 +1,77 @@
-import joblib
-import os
-from sklearn.ensemble import RandomForestClassifier
+import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.datasets import load_iris  # Replace with your actual dataset loading code
-import shap
-import json
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+import joblib
 
-# Create model directory if it doesn't exist
-model_directory = 'model'
-if not os.path.exists(model_directory):
-    os.makedirs(model_directory)
+# Load the dataset with a specified encoding
+data = pd.read_csv('D:/College/DWDM/app/DataCoSupplyChainDataset.csv', encoding='ISO-8859-1')
 
-# Load your dataset (replace with your actual dataset)
-data = load_iris()  # Example dataset, replace with your dataset
-X = data.data
-y = data.target
+# Check for NaN values in 'Order Zipcode' and fill them
+if data['Order Zipcode'].isnull().sum() > 0:
+    mode_zipcode = data['Order Zipcode'].mode()
+    if not mode_zipcode.empty:
+        data['Order Zipcode'].fillna(mode_zipcode[0], inplace=True)
 
-# Split the data
+# Check for NaN values in 'Product Description' and fill them
+if data['Product Description'].isnull().sum() > 0:
+    mode_description = data['Product Description'].mode()
+    if not mode_description.empty:
+        data['Product Description'].fillna(mode_description[0], inplace=True)
+    else:
+        # Fill with a default value if mode is not available
+        data['Product Description'].fillna("Unknown", inplace=True)
+
+# Define feature columns and target variable
+feature_columns = [
+    'Days for shipping (real)', 
+    'Days for shipment (scheduled)', 
+    'Benefit per order', 
+    'Sales per customer', 
+    'Category Id', 
+    'Customer Zipcode', 
+    'Order Item Quantity', 
+    'Order Item Product Price'
+]
+target_column = 'Late_delivery_risk'
+
+# Prepare the data
+X = data[feature_columns]
+y = data[target_column]
+
+# Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train the Random Forest Classifier
-rf_classifier = RandomForestClassifier()
-rf_classifier.fit(X_train, y_train)
+# Create a pipeline
+numeric_features = ['Days for shipping (real)', 'Days for shipment (scheduled)', 
+                   'Benefit per order', 'Sales per customer', 'Category Id', 
+                   'Customer Zipcode', 'Order Item Quantity', 'Order Item Product Price']
 
-# Save the trained model
-joblib.dump(rf_classifier, os.path.join(model_directory, 'random_forest_classifier.pkl'))
+categorical_features = []  # Add any categorical features if applicable
 
-print("Model trained and saved as 'model/random_forest_classifier.pkl'")
+# Define the preprocessor
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', SimpleImputer(strategy='mean'), numeric_features),
+        ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
+    ])
 
-# Use SHAP to explain the model
-explainer = shap.TreeExplainer(rf_classifier)
+# Create the model pipeline
+pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('classifier', RandomForestClassifier())
+])
 
-# Generate SHAP values for the test set (or for a specific input instance)
-shap_values = explainer.shap_values(X_test)
+# Fit the model
+pipeline.fit(X_train, y_train)
 
-# Save SHAP values as JSON to pass to the dashboard
-shap_json = json.dumps(shap_values.tolist())
-with open(os.path.join(model_directory, 'shap_values.json'), 'w') as f:
-    f.write(shap_json)
+# Save the model
+joblib.dump(pipeline, 'model.joblib')
 
-# Save feature importance data
-feature_importances = rf_classifier.feature_importances_.tolist()
-importance_json = json.dumps(feature_importances)
-with open(os.path.join(model_directory, 'feature_importances.json'), 'w') as f:
-    f.write(importance_json)
+# Check the model's accuracy
+accuracy = pipeline.score(X_test, y_test)
+print(f'Model Accuracy: {accuracy:.2f}')
 
-print("SHAP values and feature importances saved as JSON files.")

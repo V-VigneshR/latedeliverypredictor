@@ -1,129 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prediction Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card {
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: scale(1.05);
+        }
+
+        .card-title {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .highlight {
+            background: linear-gradient(to right, #f12711, #f5af19);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tile {
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            box-shadow: 6px 6px 12px #bebebe, -6px -6px 12px #ffffff;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s;
+        }
+
+        .tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 6px 6px 16px #b3b3b3, -6px -6px 16px #ffffff;
+        }
+
+        .visual-card {
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+        }
+
+        .visual-card h2 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .feature-chart {
+            height: 300px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 20px;
+            border-radius: 10px;
+            background: #e0e0e0;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #f7971e, #ffd200);
+            animation: progressAnimation 2s ease-in-out forwards;
+        }
+
+        @keyframes progressAnimation {
+            from {
+                width: 0%;
+            }
+            to {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
+<body class="bg-gradient-to-br from-indigo-500 to-purple-700 min-h-screen flex items-center justify-center">
+    <div class="container mx-auto px-4">
+        <div class="card max-w-2xl mx-auto">
+            <h1 class="text-4xl font-extrabold text-center card-title">Prediction Result</h1>
 
-<body class="bg-gray-100 min-h-screen">
-    <!-- Main Dashboard Container -->
-    <div class="container mx-auto px-4 py-8">
-        <!-- Page Title -->
-        <h1 class="text-4xl font-bold text-gray-800 text-center mb-10">Prediction Dashboard</h1>
-
-        <!-- Overview Section -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <!-- Prediction Result -->
-            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg p-8 shadow-lg">
-                <h2 class="text-xl font-bold">Prediction Result</h2>
-                <p class="text-4xl font-semibold mt-4">{{ prediction }}</p>
-                <p class="text-sm mt-2">Prediction Outcome</p>
+            <div class="tile text-center">
+                <p class="text-2xl font-semibold">
+                    Prediction:
+                    <span class="highlight">
+                        {{ 'On Time' if prediction == 1 else 'Late' }}
+                    </span>
+                </p>
             </div>
 
-            <!-- Accuracy Box -->
-            <div class="bg-white rounded-lg p-8 shadow-lg">
-                <h2 class="text-xl font-bold text-gray-800">Model Accuracy</h2>
-                <p class="text-4xl font-semibold mt-4">85%</p> <!-- Replace with dynamic value -->
-                <p class="text-sm mt-2 text-gray-500">Accuracy based on test set</p>
+            <div class="tile text-center">
+                <p class="text-2xl font-semibold">
+                    Model Accuracy:
+                    <span class="highlight">
+                        {{ accuracy }}%
+                    </span>
+                </p>
+                <div class="progress-bar">
+                    <div class="progress-bar-inner" style="width: {{ accuracy }}%;"></div>
+                </div>
             </div>
 
-            <!-- Precision Box -->
-            <div class="bg-white rounded-lg p-8 shadow-lg">
-                <h2 class="text-xl font-bold text-gray-800">Model Precision</h2>
-                <p class="text-4xl font-semibold mt-4">92%</p> <!-- Replace with dynamic value -->
-                <p class="text-sm mt-2 text-gray-500">Precision for predicted positives</p>
-            </div>
-        </div>
-
-        <!-- Charts Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-            <!-- Prediction Probability Chart -->
-            <div class="bg-white p-8 rounded-lg shadow-lg hover:scale-105 transition-transform">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Prediction Probability</h2>
-                <div id="prediction-chart"></div>
+            <div class="visual-card">
+                <h2>SHAP Feature Impact</h2>
+                <div class="feature-chart">
+                    <img src="data:image/png;base64,{{ shap_plot_url }}" alt="SHAP Feature Impact">
+                </div>
             </div>
 
-            <!-- SHAP Values Chart -->
-            <div class="bg-white p-8 rounded-lg shadow-lg hover:scale-105 transition-transform">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">SHAP Values</h2>
-                <div id="shap-chart"></div>
+            <div class="visual-card mt-6">
+                <h2>Prediction Breakdown</h2>
+                <ul class="list-disc list-inside mt-4">
+                    {% for reason in reasons %}
+                        <li class="text-gray-600">Feature: <span class="font-bold">{{ feature_names[loop.index0] }}</span> - Importance: <span class="font-bold">{{ reason }}</span></li>
+                    {% endfor %}
+                </ul>
             </div>
-        </div>
 
-        <!-- Feature Importance Chart -->
-        <div class="bg-white p-8 rounded-lg shadow-lg hover:scale-105 transition-transform">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Feature Importances</h2>
-            <div id="importance-chart"></div>
-        </div>
-
-        <!-- Footer Section (Back to Prediction or Home) -->
-        <div class="mt-10 text-center">
-            <a href="/" class="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline">Back to Predictor</a>
+            <div class="mt-8 text-center">
+                <a href="/" class="inline-block bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition ease-in-out duration-300">
+                    Make Another Prediction
+                </a>
+            </div>
         </div>
     </div>
-
-    <!-- Plotly.js Chart Scripts -->
-    <script>
-        // SHAP values fetch and plot
-        fetch('/model/shap_values.json')
-            .then(response => response.json())
-            .then(shapValues => {
-                const shapData = shapValues[0];  // Replace with real data
-                const featureNames = ["Sepal length", "Sepal width", "Petal length", "Petal width"];  // Update with actual feature names
-
-                let shapTrace = {
-                    x: shapData,
-                    y: featureNames,
-                    type: 'bar',
-                    orientation: 'h',
-                    marker: { color: 'indigo' }
-                };
-
-                let shapLayout = {
-                    title: 'SHAP Values for Prediction',
-                    xaxis: { title: 'SHAP Value' },
-                    yaxis: { title: 'Features' },
-                    plot_bgcolor: '#f9fafb',
-                    paper_bgcolor: '#ffffff',
-                    font: { color: '#374151' }
-                };
-
-                Plotly.newPlot('shap-chart', [shapTrace], shapLayout);
-            });
-
-        // Prediction Probability Chart (Update with actual data)
-        var graphData = {{ graphJSON|safe }};
-        Plotly.newPlot('prediction-chart', graphData);
-
-        // Feature Importance Chart
-        fetch('/model/feature_importances.json')
-            .then(response => response.json())
-            .then(featureImportances => {
-                const featureNames = ["Sepal length", "Sepal width", "Petal length", "Petal width"];  // Update based on your data
-
-                let importanceTrace = {
-                    x: featureNames,
-                    y: featureImportances,
-                    type: 'bar',
-                    marker: { color: 'blue' }
-                };
-
-                let importanceLayout = {
-                    title: 'Feature Importances',
-                    xaxis: { title: 'Features' },
-                    yaxis: { title: 'Importance' },
-                    plot_bgcolor: '#f9fafb',
-                    paper_bgcolor: '#ffffff',
-                    font: { color: '#374151' }
-                };
-
-                Plotly.newPlot('importance-chart', [importanceTrace], importanceLayout);
-            });
-    </script>
 </body>
-
 </html>
