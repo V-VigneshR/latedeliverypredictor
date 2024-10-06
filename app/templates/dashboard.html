@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <!-- Main Dashboard Container -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Page Title -->
+        <h1 class="text-4xl font-bold text-gray-800 text-center mb-10">Prediction Dashboard</h1>
+
+        <!-- Overview Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <!-- Prediction Result -->
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg p-8 shadow-lg">
+                <h2 class="text-xl font-bold">Prediction Result</h2>
+                <p class="text-4xl font-semibold mt-4">{{ prediction }}</p>
+                <p class="text-sm mt-2">Prediction Outcome</p>
+            </div>
+
+            <!-- Accuracy Box -->
+            <div class="bg-white rounded-lg p-8 shadow-lg">
+                <h2 class="text-xl font-bold text-gray-800">Model Accuracy</h2>
+                <p class="text-4xl font-semibold mt-4">85%</p> <!-- Replace with dynamic value -->
+                <p class="text-sm mt-2 text-gray-500">Accuracy based on test set</p>
+            </div>
+
+            <!-- Precision Box -->
+            <div class="bg-white rounded-lg p-8 shadow-lg">
+                <h2 class="text-xl font-bold text-gray-800">Model Precision</h2>
+                <p class="text-4xl font-semibold mt-4">92%</p> <!-- Replace with dynamic value -->
+                <p class="text-sm mt-2 text-gray-500">Precision for predicted positives</p>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <!-- Prediction Probability Chart -->
+            <div class="bg-white p-8 rounded-lg shadow-lg hover:scale-105 transition-transform">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Prediction Probability</h2>
+                <div id="prediction-chart"></div>
+            </div>
+
+            <!-- SHAP Values Chart -->
+            <div class="bg-white p-8 rounded-lg shadow-lg hover:scale-105 transition-transform">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">SHAP Values</h2>
+                <div id="shap-chart"></div>
+            </div>
+        </div>
+
+        <!-- Feature Importance Chart -->
+        <div class="bg-white p-8 rounded-lg shadow-lg hover:scale-105 transition-transform">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Feature Importances</h2>
+            <div id="importance-chart"></div>
+        </div>
+
+        <!-- Footer Section (Back to Prediction or Home) -->
+        <div class="mt-10 text-center">
+            <a href="/" class="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline">Back to Predictor</a>
+        </div>
+    </div>
+
+    <!-- Plotly.js Chart Scripts -->
+    <script>
+        // SHAP values fetch and plot
+        fetch('/model/shap_values.json')
+            .then(response => response.json())
+            .then(shapValues => {
+                const shapData = shapValues[0];  // Replace with real data
+                const featureNames = ["Sepal length", "Sepal width", "Petal length", "Petal width"];  // Update with actual feature names
+
+                let shapTrace = {
+                    x: shapData,
+                    y: featureNames,
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { color: 'indigo' }
+                };
+
+                let shapLayout = {
+                    title: 'SHAP Values for Prediction',
+                    xaxis: { title: 'SHAP Value' },
+                    yaxis: { title: 'Features' },
+                    plot_bgcolor: '#f9fafb',
+                    paper_bgcolor: '#ffffff',
+                    font: { color: '#374151' }
+                };
+
+                Plotly.newPlot('shap-chart', [shapTrace], shapLayout);
+            });
+
+        // Prediction Probability Chart (Update with actual data)
+        var graphData = {{ graphJSON|safe }};
+        Plotly.newPlot('prediction-chart', graphData);
+
+        // Feature Importance Chart
+        fetch('/model/feature_importances.json')
+            .then(response => response.json())
+            .then(featureImportances => {
+                const featureNames = ["Sepal length", "Sepal width", "Petal length", "Petal width"];  // Update based on your data
+
+                let importanceTrace = {
+                    x: featureNames,
+                    y: featureImportances,
+                    type: 'bar',
+                    marker: { color: 'blue' }
+                };
+
+                let importanceLayout = {
+                    title: 'Feature Importances',
+                    xaxis: { title: 'Features' },
+                    yaxis: { title: 'Importance' },
+                    plot_bgcolor: '#f9fafb',
+                    paper_bgcolor: '#ffffff',
+                    font: { color: '#374151' }
+                };
+
+                Plotly.newPlot('importance-chart', [importanceTrace], importanceLayout);
+            });
+    </script>
+</body>
+
+</html>
